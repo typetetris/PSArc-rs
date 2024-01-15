@@ -4,10 +4,10 @@ version = "0.0.0"
 edition = "2021"
 description = "The main RS API for PSArc-lib (A library to handle writing/parsing/unpacking/packing of Playstation Archive formats)"
 authors = ["Jacob Allen Morris"]
-readme = "https://github.com/Jacobboogiebear/PSArc-rs/blob/master/README.md"
+readme = "README.md"
 repository = "https://github.com/Jacobboogiebear/PSArc-rs/"
 license = "MIT"
-license-file = "https://github.com/Jacobboogiebear/PSArc-rs/blob/master/LICENSE"
+license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 
 [dependencies]
