@@ -6,7 +6,6 @@ description = "A library to handle writing/parsing/unpacking/packing of Playstat
 authors = ["Jacob Allen Morris"]
 readme = "README.md"
 repository = "https://github.com/Jacobboogiebear/PSArc-rs/"
-license = "MIT"
 license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 

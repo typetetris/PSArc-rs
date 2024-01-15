@@ -6,7 +6,6 @@ description = "The CLI for PSArc-rs (A library to handle writing/parsing/unpacki
 authors = ["Jacob Allen Morris"]
 readme = "README.md"
 repository = "https://github.com/Jacobboogiebear/PSArc-rs/"
-license = "MIT"
 license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 
