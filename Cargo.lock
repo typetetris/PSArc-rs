@@ -12,13 +12,17 @@ version = "0.0.0"
 
 [[package]]
 name = "PSArc-lib"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "flate2",
  "seq-macro",
  "serde",
 ]
+
+[[package]]
+name = "PSArc-wasi"
+version = "0.1.0"
 
 [[package]]
 name = "adler"
