@@ -10,6 +10,9 @@ license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 exclude = ["res/test.pak"]
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 serde = { optional = true, version = "1.0.195", features = ["derive"] }
 seq-macro = { version = "0.3.5" }
@@ -18,3 +21,4 @@ flate2 = { version = "1.0.28", features = ["rust_backend"] }
 
 [features]
 serde = ["dep:serde"]
+wasi = []

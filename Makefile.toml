@@ -1,0 +1,19 @@
+[tasks.test]
+workspace = false
+command = "cargo"
+args = ["test", "-p", "PSArc-lib", "--features", "serde"]
+
+[tasks.docs]
+workspace = false
+command = "cargo"
+args = ["doc"]
+
+[tasks.build-wasi-debug]
+workspace = false
+command = "cargo"
+args = ["build", "-p", "PSArc-lib", "--target", "wasm32-unknown-unknown", "--features", "wasi"]
+
+[tasks.build-wasi-release]
+workspace = false
+command = "cargo"
+args = ["build", "-p", "PSArc-lib", "--target", "wasm32-unknown-unknown", "--features", "wasi", "--release"]
