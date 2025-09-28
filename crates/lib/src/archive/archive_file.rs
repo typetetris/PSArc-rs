@@ -28,25 +28,25 @@ pub struct PSArchive {
 
 impl PSArchive {
     pub fn get_manifest_size_offset(&self) -> (usize, usize) {
-        return (
+        (
             self.contents[0].file_offset as usize - self.manifest.file_offset as usize,
             self.manifest.file_offset as usize,
-        );
+        )
     }
 
     pub fn get_size_offset(&self, item: usize) -> (usize, usize) {
         if item + 1 == self.contents.len() {
-            return (
+            (
                 self.file_size - self.contents[item].file_offset as usize,
                 self.contents[item].file_offset as usize,
-            );
+            )
         } else {
-            return (
+            (
                 self.contents[item + 1].file_offset as usize
                     - self.contents[item].file_offset as usize
                     - 1,
                 self.contents[item].file_offset as usize,
-            );
+            )
         }
     }
 
@@ -64,7 +64,7 @@ impl PSArchive {
                 .map(|f| f.to_string())
                 .collect::<Vec<String>>();
             self.files = strings.clone();
-            return strings;
+            strings
         } else {
             let s = String::from_utf8(bytes).unwrap();
             let strings = s
@@ -74,7 +74,7 @@ impl PSArchive {
                 .map(|f| f.to_string())
                 .collect::<Vec<String>>();
             self.files = strings.clone();
-            return strings;
+            strings
         }
     }
 
@@ -85,9 +85,9 @@ impl PSArchive {
             let mut z = flate2::read::ZlibDecoder::new(&bytes[..]);
             let mut s = Vec::new();
             z.read_to_end(&mut s).unwrap();
-            return s;
+            s
         } else {
-            return bytes;
+            bytes
         }
     }
 }
@@ -113,7 +113,7 @@ impl Parsable for PSArchive {
                 let item = item.parse(item_bytes).unwrap();
                 contents.push(item);
             }
-            return Ok(Self {
+            Ok(Self {
                 version,
                 compression,
                 table_of_contents,
@@ -121,9 +121,9 @@ impl Parsable for PSArchive {
                 files: Vec::new(),
                 contents,
                 file_size: 0,
-            });
+            })
         } else {
-            return Err(anyhow!("Invalid header for PSArc format"));
+            Err(anyhow!("Invalid header for PSArc format"))
         }
     }
 }
@@ -141,7 +141,7 @@ mod test {
     fn test_archive_parsing() {
         let bytes = include_bytes!("../../res/test.pak").to_vec();
         let result = PSArchive::parse(&*bytes);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         let mut result = result.unwrap();
         result.file_size = bytes.len();
         let (size, offset) = result.get_manifest_size_offset();
@@ -175,13 +175,7 @@ mod test {
         );
         let (size, offset) = result.get_size_offset(0);
         let contents = String::from_utf8(result.parse_file(0, &bytes[offset..offset + size]));
-        assert_eq!(contents.is_ok(), true);
+        assert!(contents.is_ok());
         assert_eq!(contents.unwrap(), "<TextData>\r\n	<Property name=\"color\" value=\"#ff0000\" />\r\n	<Property name=\"text\" value=\"Hello there!\" />\r\n</TextData>");
-    }
-
-    #[test]
-    pub fn temp() {
-        let bytes = include_bytes!("C:\\Users\\Jacob\\Downloads\\NMSARC.AnimMBIN.pak").to_vec();
-        let result = PSArchive::parse(&*bytes).unwrap();
     }
 }

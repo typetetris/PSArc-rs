@@ -8,38 +8,38 @@ pub trait ConvertAsBytes {
 
 impl ConvertAsBytes for Vec<u8> {
     fn convert_as_bytes(&self) -> Vec<u8> {
-        return self.to_owned();
+        self.to_owned()
     }
 }
 
 impl ConvertAsBytes for &[u8] {
     fn convert_as_bytes(&self) -> Vec<u8> {
-        return self.to_vec();
+        self.to_vec()
     }
 }
 
 impl ConvertAsBytes for &str {
     fn convert_as_bytes(&self) -> Vec<u8> {
-        return self.as_bytes().to_vec();
+        self.as_bytes().to_vec()
     }
 }
 
 impl ConvertAsBytes for String {
     fn convert_as_bytes(&self) -> Vec<u8> {
-        return self.as_bytes().to_vec();
+        self.as_bytes().to_vec()
     }
 }
 
 impl ConvertAsBytes for u8 {
     fn convert_as_bytes(&self) -> Vec<u8> {
-        return vec![self.to_owned()];
+        vec![self.to_owned()]
     }
 }
 
 seq_macro::seq!(N in 1..=16 {
     impl ConvertAsBytes for [u8; N] {
 		fn convert_as_bytes(&self) -> Vec<u8> {
-			return self.to_vec();
+			self.to_vec()
 		}
 	}
 });

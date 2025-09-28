@@ -17,29 +17,21 @@ pub enum PSArchiveFlags {
 
 /// Should parse 4 bytes, any more or less will result in an error
 impl Parsable for PSArchiveFlags {
-	type Error = anyhow::Error;
+    type Error = anyhow::Error;
     fn parse(bytes: impl ConvertAsBytes) -> Result<Self, Self::Error> {
         let bytes = &bytes.convert_as_bytes()[..];
-		match bytes {
-			&[0, 0, 0, 0] => {
-				return Ok(Self::RELATIVE);
-			}
-			&[0, 0, 0, 1] => {
-				return Ok(Self::IGNORECASE);
-			}
-			&[0, 0, 0, 2] => {
-				return Ok(Self::ABSOLUTE);
-			}
-			_ => {
-				return Err(anyhow!("Invalid flags"));
-			}
-		}
+        match *bytes {
+            [0, 0, 0, 0] => Ok(Self::RELATIVE),
+            [0, 0, 0, 1] => Ok(Self::IGNORECASE),
+            [0, 0, 0, 2] => Ok(Self::ABSOLUTE),
+            _ => Err(anyhow!("Invalid flags")),
+        }
     }
 }
 
 impl Default for PSArchiveFlags {
     fn default() -> Self {
-        return Self::ERROR;
+        Self::ERROR
     }
 }
 
@@ -65,15 +57,15 @@ impl std::fmt::Display for PSArchiveFlags {
 #[cfg(test)]
 #[doc(hidden)]
 mod test {
-	use crate::prelude::*;
-	use super::PSArchiveFlags;
+    use super::PSArchiveFlags;
+    use crate::prelude::*;
 
-	#[test]
-	fn test_flags_parsing() {
-		let bytes = include_bytes!("../../res/test.pak")[0x1C..0x20].to_vec();
-		let result = PSArchiveFlags::parse(bytes);
-		assert_eq!(result.is_ok(), true);
-		let result = result.unwrap();
-		assert_eq!(result, PSArchiveFlags::ABSOLUTE);
-	}
+    #[test]
+    fn test_flags_parsing() {
+        let bytes = include_bytes!("../../res/test.pak")[0x1C..0x20].to_vec();
+        let result = PSArchiveFlags::parse(bytes);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert_eq!(result, PSArchiveFlags::ABSOLUTE);
+    }
 }

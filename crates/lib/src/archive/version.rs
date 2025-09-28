@@ -23,11 +23,9 @@ impl Parsable for PSArchiveVersion {
             4 => {
                 let major = bytes[1] as u16 + ((bytes[0] as u16) << 8);
                 let minor = bytes[3] as u16 + ((bytes[2] as u16) << 8);
-                return Ok(Self { major, minor });
+                Ok(Self { major, minor })
             }
-            _ => {
-                return Err(anyhow!("Invalid length of bytes"));
-            }
+            _ => Err(anyhow!("Invalid length of bytes")),
         }
     }
 }
@@ -46,18 +44,18 @@ mod test {
 
     #[test]
     fn test_version_parsing() {
-		let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
-		let result = PSArchiveVersion::parse(bytes);
-		assert_eq!(result.is_ok(), true);
-		let result = result.unwrap();
-		assert_eq!(result.major, 1);
-		assert_eq!(result.minor, 4);
-	}
+        let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
+        let result = PSArchiveVersion::parse(bytes);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert_eq!(result.major, 1);
+        assert_eq!(result.minor, 4);
+    }
 
-	#[test]
-	fn test_version_display() {
-		let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
-		let result = PSArchiveVersion::parse(bytes).unwrap();
-		assert_eq!(format!("{}", result), "v1.4");
-	}
+    #[test]
+    fn test_version_display() {
+        let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
+        let result = PSArchiveVersion::parse(bytes).unwrap();
+        assert_eq!(format!("{result}"), "v1.4");
+    }
 }

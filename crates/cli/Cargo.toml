@@ -1,5 +1,5 @@
 [package]
-name = "PSArc-cli"
+name = "psarc-cli"
 version = "0.0.0"
 edition = "2021"
 description = "The CLI for PSArc-rs (A library to handle writing/parsing/unpacking/packing of Playstation Archive formats)"
@@ -10,3 +10,4 @@ license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 
 [dependencies]
+psarc-lib = { workspace = true }

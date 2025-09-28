@@ -5,24 +5,24 @@ use crate::prelude::*;
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct PSArchiveTableItem {
-	/// **compression_type** is the compression type of the item
+    /// **compression_type** is the compression type of the item
     pub compression_type: PSArchiveCompression,
-	/// **block_offset** is the offset in blocks of the item
+    /// **block_offset** is the offset in blocks of the item
     pub block_offset: u32,
-	/// **uncompressed_size** is the uncompressed size of the item
+    /// **uncompressed_size** is the uncompressed size of the item
     pub uncompressed_size: u64,
-	/// **file_offset** is the file offset of the item
+    /// **file_offset** is the file offset of the item
     pub file_offset: u64,
 }
 
 impl PSArchiveTableItem {
     pub fn new(compression_type: PSArchiveCompression) -> Self {
-        return Self {
+        Self {
             compression_type,
             block_offset: 0,
             uncompressed_size: 0,
             file_offset: 0,
-        };
+        }
     }
 }
 
@@ -44,12 +44,12 @@ impl ParsableContext for PSArchiveTableItem {
             + ((bytes[0x1B] as u64) << 16)
             + ((bytes[0x1C] as u64) << 8)
             + (bytes[0x1D] as u64);
-        return Ok(Self {
+        Ok(Self {
             compression_type: self.compression_type.clone(),
             block_offset,
             uncompressed_size,
             file_offset,
-        });
+        })
     }
 }
 
@@ -64,7 +64,7 @@ mod test {
         let bytes = include_bytes!("../../res/test.pak")[0x20..0x3E].to_vec();
         let mut table_item = PSArchiveTableItem::new(PSArchiveCompression::ZLIB);
         let result = table_item.parse(bytes);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(
             result,
@@ -82,7 +82,7 @@ mod test {
         let bytes = include_bytes!("../../res/test.pak")[0x3E..0x5C].to_vec();
         let mut table_item = PSArchiveTableItem::new(PSArchiveCompression::ZLIB);
         let result = table_item.parse(bytes);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(
             result,

@@ -29,13 +29,13 @@ impl Parsable for PSArchiveCompression {
         } else if ZLIB_COMPRESSION.convert_as_bytes() == bytes {
             return Ok(Self::ZLIB);
         }
-        return Err(anyhow!("Invalid compression type"));
+        Err(anyhow!("Invalid compression type"))
     }
 }
 
 impl Default for PSArchiveCompression {
     fn default() -> Self {
-        return Self::ERROR;
+        Self::ERROR
     }
 }
 
@@ -65,7 +65,7 @@ mod test {
     fn test_compression_parsing_lzma() {
         let bytes = "lzma".as_bytes();
         let result = PSArchiveCompression::parse(bytes);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(result, PSArchiveCompression::LZMA);
     }
@@ -74,7 +74,7 @@ mod test {
     fn test_compression_parsing_zlib() {
         let bytes = "zlib".as_bytes();
         let result = PSArchiveCompression::parse(bytes);
-        assert_eq!(result.is_ok(), true);
+        assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(result, PSArchiveCompression::ZLIB);
     }
@@ -83,13 +83,13 @@ mod test {
     fn test_compression_parsing_error() {
         let bytes = "nope".as_bytes();
         let result = PSArchiveCompression::parse(bytes);
-        assert_eq!(result.is_ok(), false);
+        assert!(result.is_err());
     }
 
     #[test]
     fn test_compression_display() {
         let bytes = "lzma".as_bytes();
         let result = PSArchiveCompression::parse(bytes).unwrap();
-        assert_eq!(format!("{}", result), "lzma");
+        assert_eq!(format!("{result}"), "lzma");
     }
 }

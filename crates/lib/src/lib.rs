@@ -1,5 +1,3 @@
-#![allow(non_snake_case)]
-
 /// ### Prelude
 /// Prelude includes all the required modules for using PSArc-lib in a standard context
 pub mod prelude;
