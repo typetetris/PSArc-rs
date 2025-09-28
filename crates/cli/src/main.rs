@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use psarc_lib::prelude::PSArchive;
+use psarc_lib::archive::PSArchive;
 
 /// psarc-cli List contents of playstation archives
 #[derive(Debug, Parser)]
@@ -12,6 +12,10 @@ struct Args {
     /// Verbose output
     #[arg(short, long)]
     verbose: bool,
+
+    /// Extract manifest
+    #[arg(short, long)]
+    manifest_path: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -22,7 +26,11 @@ fn main() -> anyhow::Result<()> {
     println!("archive compression: {}", archive.compression);
     if args.verbose {
         println!("{:#?}", archive.table_of_contents);
-        println!("{:#?}", archive.manifest);
     }
+
+    if let Some(manifest_path) = args.manifest_path {
+        std::fs::write(manifest_path, archive.parse_file(0)?)?;
+    }
+
     Ok(())
 }

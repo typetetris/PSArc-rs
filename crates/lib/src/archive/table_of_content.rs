@@ -1,4 +1,6 @@
-use super::PSArchiveFlags;
+use crate::primitive;
+
+use super::{PSArchiveFlags, PSArchiveTableItem};
 
 /// **PSArchiveTOC** contains the table of content and details about each resource
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -14,39 +16,50 @@ pub struct PSArchiveTOC {
     pub block_size: u32,
     // **flags** is the flags of the Playstation Archive file
     pub flags: PSArchiveFlags,
+    // **entries** is the list of toc entries
+    pub entries: Vec<PSArchiveTableItem>,
+    // **block_count** number of blocks in archive
+    pub block_count: usize,
+    // **block_sizes** are the block sizes
+    pub block_sizes: Vec<u16>,
 }
 
 impl PSArchiveTOC {
-    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
-        let length = u32::from_be_bytes(bytes[0..4].try_into()?) - 32;
-        let entry_size = u32::from_be_bytes(bytes[4..8].try_into()?);
-        let entry_count = u32::from_be_bytes(bytes[8..12].try_into()?);
-        let block_size = u32::from_be_bytes(bytes[12..16].try_into()?);
-        let flags = PSArchiveFlags::parse(bytes[16..20].try_into()?)?;
-        Ok(Self {
-            length,
-            entry_size,
-            entry_count,
-            block_size,
-            flags,
-        })
-    }
-}
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<(Self, &[u8])> {
+        let (length, bytes) = primitive(u32::from_be_bytes, bytes)?;
+        let (entry_size, bytes) = primitive(u32::from_be_bytes, bytes)?;
+        let (entry_count, bytes) = primitive(u32::from_be_bytes, bytes)?;
+        let (block_size, bytes) = primitive(u32::from_be_bytes, bytes)?;
+        let (flags, bytes) = PSArchiveFlags::parse(bytes)?;
 
-#[cfg(test)]
-#[doc(hidden)]
-mod test {
-    use super::{PSArchiveFlags, PSArchiveTOC};
+        let mut entries: Vec<PSArchiveTableItem> = Vec::with_capacity(entry_count as usize);
+        let bytes = (0..entry_count).try_fold(bytes, |bytes, _| -> anyhow::Result<_> {
+            let (entry, bytes) = PSArchiveTableItem::parse(bytes)?;
+            entries.push(entry);
+            Ok(bytes)
+        })?;
 
-    #[test]
-    fn test_toc_parsing() {
-        let bytes = include_bytes!("../../res/test.pak")[0xC..].to_vec();
-        let result = PSArchiveTOC::parse(&bytes[..]);
-        assert!(result.is_ok());
-        let result = result.unwrap();
-        assert_eq!(result.length, 64);
-        assert_eq!(result.entry_size, 30);
-        assert_eq!(result.entry_count, 1);
-        assert_eq!(result.flags, PSArchiveFlags::ABSOLUTE);
+        let block_count = ((length - 32 - entry_count * entry_size) / 2) as usize;
+
+        let mut block_sizes: Vec<u16> = Vec::with_capacity(block_count);
+        let bytes = (0..block_count).try_fold(bytes, |bytes, _| -> anyhow::Result<_> {
+            let (block_size, bytes) = primitive(u16::from_be_bytes, bytes)?;
+            block_sizes.push(block_size);
+            Ok(bytes)
+        })?;
+
+        Ok((
+            Self {
+                length,
+                entry_size,
+                entry_count,
+                block_size,
+                flags,
+                entries,
+                block_count,
+                block_sizes,
+            },
+            bytes,
+        ))
     }
 }

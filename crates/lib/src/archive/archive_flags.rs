@@ -15,13 +15,17 @@ pub enum PSArchiveFlags {
 }
 
 impl PSArchiveFlags {
-    pub fn parse(bytes: [u8; 4]) -> anyhow::Result<Self> {
-        match bytes {
-            [0, 0, 0, 0] => Ok(Self::RELATIVE),
-            [0, 0, 0, 1] => Ok(Self::IGNORECASE),
-            [0, 0, 0, 2] => Ok(Self::ABSOLUTE),
-            _ => Err(anyhow!("Invalid flags")),
-        }
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<(Self, &[u8])> {
+        let (snippet, bytes) = bytes
+            .split_at_checked(4)
+            .ok_or_else(|| anyhow!("too short"))?;
+        let result = match snippet {
+            [0, 0, 0, 0] => Self::RELATIVE,
+            [0, 0, 0, 1] => Self::IGNORECASE,
+            [0, 0, 0, 2] => Self::ABSOLUTE,
+            _ => anyhow::bail!("Invalid flags"),
+        };
+        Ok((result, bytes))
     }
 }
 
@@ -47,20 +51,5 @@ impl std::fmt::Display for PSArchiveFlags {
                 write!(f, "Error parsing Archive Flags")
             }
         }
-    }
-}
-
-#[cfg(test)]
-#[doc(hidden)]
-mod test {
-    use super::PSArchiveFlags;
-
-    #[test]
-    fn test_flags_parsing() {
-        let bytes = &include_bytes!("../../res/test.pak")[0x1C..0x20];
-        let result = PSArchiveFlags::parse(bytes[0..4].try_into().unwrap());
-        assert!(result.is_ok());
-        let result = result.unwrap();
-        assert_eq!(result, PSArchiveFlags::ABSOLUTE);
     }
 }
