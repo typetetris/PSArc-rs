@@ -1,7 +1,7 @@
 [package]
 name = "psarc-lib"
 version = "0.0.1"
-edition = "2021"
+edition = "2024"
 description = "A library to handle writing/parsing/unpacking/packing of Playstation Archive formats"
 authors = ["Jacob Allen Morris"]
 readme = "README.md"

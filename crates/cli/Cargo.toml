@@ -1,7 +1,7 @@
 [package]
 name = "psarc-cli"
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
 description = "The CLI for PSArc-rs (A library to handle writing/parsing/unpacking/packing of Playstation Archive formats)"
 authors = ["Jacob Allen Morris"]
 readme = "README.md"
