@@ -1,18 +1,14 @@
 use std::io::Read;
 
 use super::{PSArchiveCompression, PSArchiveTOC, PSArchiveTableItem, PSArchiveVersion};
-use crate::{
-    prelude::ParsableContext,
-    traits::{ConvertAsBytes, Parsable},
-};
 use anyhow::anyhow;
 
-const PSARC_HEADER: &str = "PSAR";
+const PSARC_HEADER: &[u8; 4] = b"PSAR";
 
 /// **PSArchive** contains all the information about a complete singular Playstation Archive file
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct PSArchive {
+pub struct PSArchive<'a> {
     /// **version** is the Playstation Archive file version
     pub version: PSArchiveVersion,
     /// **compression** is the Playstation Archive file compression
@@ -23,96 +19,54 @@ pub struct PSArchive {
     pub manifest: PSArchiveTableItem,
     pub files: Vec<String>,
     pub contents: Vec<PSArchiveTableItem>,
-    pub file_size: usize,
+    pub file_contents: &'a [u8],
 }
 
-impl PSArchive {
-    pub fn get_manifest_size_offset(&self) -> (usize, usize) {
-        (
-            self.contents[0].file_offset as usize - self.manifest.file_offset as usize,
-            self.manifest.file_offset as usize,
-        )
+impl<'a> PSArchive<'a> {
+    pub fn parse_manifest(&self) -> anyhow::Result<Vec<String>> {
+        let strings = String::from_utf8(self.parse_file(0)?)?
+            .split("\n")
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>();
+        Ok(strings)
     }
 
-    pub fn get_size_offset(&self, item: usize) -> (usize, usize) {
-        if item + 1 == self.contents.len() {
-            (
-                self.file_size - self.contents[item].file_offset as usize,
-                self.contents[item].file_offset as usize,
-            )
-        } else {
-            (
-                self.contents[item + 1].file_offset as usize
-                    - self.contents[item].file_offset as usize
-                    - 1,
-                self.contents[item].file_offset as usize,
-            )
-        }
-    }
-
-    pub fn parse_manifest(&mut self, bytes: impl ConvertAsBytes) -> Vec<String> {
-        let bytes = bytes.convert_as_bytes();
-        let (size, _) = self.get_manifest_size_offset();
-        if size > 100 {
-            let mut z = flate2::read::ZlibDecoder::new(&bytes[..]);
-            let mut s = String::new();
-            z.read_to_string(&mut s).unwrap();
-            let strings = s
-                .split("\n")
-                .collect::<Vec<&str>>()
-                .iter()
-                .map(|f| f.to_string())
-                .collect::<Vec<String>>();
-            self.files = strings.clone();
-            strings
-        } else {
-            let s = String::from_utf8(bytes).unwrap();
-            let strings = s
-                .split("\n")
-                .collect::<Vec<&str>>()
-                .iter()
-                .map(|f| f.to_string())
-                .collect::<Vec<String>>();
-            self.files = strings.clone();
-            strings
-        }
-    }
-
-    pub fn parse_file(&self, item: usize, bytes: impl ConvertAsBytes) -> Vec<u8> {
-        let bytes = bytes.convert_as_bytes();
+    pub fn parse_file(&self, item: usize) -> anyhow::Result<Vec<u8>> {
         let item = &self.contents[item];
-        if item.uncompressed_size > 100 {
-            let mut z = flate2::read::ZlibDecoder::new(&bytes[..]);
+        let bytes = &self.file_contents[item.file_offset as usize..];
+        let uncompressed_size = item.uncompressed_size as usize;
+        Ok(if uncompressed_size > 100 {
+            let mut z = flate2::read::ZlibDecoder::new(bytes);
             let mut s = Vec::new();
-            z.read_to_end(&mut s).unwrap();
+            z.read_to_end(&mut s)?;
             s
         } else {
-            bytes
-        }
+            bytes[..uncompressed_size].into()
+        })
     }
-}
 
-impl Parsable for PSArchive {
-    type Error = anyhow::Error;
-    fn parse(bytes: impl ConvertAsBytes) -> Result<Self, Self::Error> {
-        let bytes = bytes.convert_as_bytes();
-        let header = (&bytes[0..4]).convert_as_bytes();
-        if header == PSARC_HEADER.convert_as_bytes() {
+    pub fn parse(bytes: &'a [u8]) -> anyhow::Result<Self> {
+        if &bytes[0..4] == PSARC_HEADER {
             let version = PSArchiveVersion::parse(&bytes[0x4..0x8])?;
             let compression = PSArchiveCompression::parse(&bytes[0x8..0xC])?;
             let table_of_contents = PSArchiveTOC::parse(&bytes[0xC..0x20])?;
-            let mut manifest = PSArchiveTableItem::new(PSArchiveCompression::ZLIB);
-            let manifest = manifest.parse(&bytes[0x20..0x3E])?;
-            let mut contents = Vec::new();
-            for i in 0..table_of_contents.entry_count as usize {
-                let item_bytes = &bytes[0x3E + i * table_of_contents.entry_size as usize
-                    ..0x3E
-                        + i * table_of_contents.entry_size as usize
-                        + table_of_contents.entry_size as usize];
-                let mut item = PSArchiveTableItem::new(PSArchiveCompression::ZLIB);
-                let item = item.parse(item_bytes).unwrap();
-                contents.push(item);
-            }
+            let contents_result: Result<Vec<_>, _> = (0..table_of_contents.entry_count)
+                .map(|elem|
+                    // header
+                    0x20
+                    // elems already read
+                    + elem * table_of_contents.entry_size)
+                .map(|offset| offset as usize)
+                .map(|offset| PSArchiveTableItem::parse(&bytes[offset..]))
+                .collect();
+            let contents = contents_result?;
+            let manifest = contents
+                .first()
+                .ok_or_else(|| anyhow!("manifest missing"))?
+                .clone();
+
             Ok(Self {
                 version,
                 compression,
@@ -120,7 +74,7 @@ impl Parsable for PSArchive {
                 manifest,
                 files: Vec::new(),
                 contents,
-                file_size: 0,
+                file_contents: bytes,
             })
         } else {
             Err(anyhow!("Invalid header for PSArc format"))
@@ -142,10 +96,8 @@ mod test {
         let bytes = include_bytes!("../../res/test.pak").to_vec();
         let result = PSArchive::parse(&*bytes);
         assert!(result.is_ok());
-        let mut result = result.unwrap();
-        result.file_size = bytes.len();
-        let (size, offset) = result.get_manifest_size_offset();
-        result.parse_manifest(&bytes[offset..offset + size]);
+        let result = result.unwrap();
+        result.parse_manifest();
         assert_eq!(
             result,
             PSArchive {
@@ -155,27 +107,30 @@ mod test {
                     length: 64,
                     entry_size: 30,
                     entry_count: 1,
+                    block_size: 65536,
                     flags: PSArchiveFlags::ABSOLUTE,
                 },
                 manifest: PSArchiveTableItem {
-                    compression_type: PSArchiveCompression::ZLIB,
+                    md5_digest: [0; 16],
                     block_offset: 0,
                     uncompressed_size: 17,
                     file_offset: 96,
                 },
                 files: vec!["/data/example.xml".to_string()],
                 contents: vec![PSArchiveTableItem {
-                    compression_type: PSArchiveCompression::ZLIB,
+                    md5_digest: [0; 16],
                     block_offset: 1,
                     uncompressed_size: 115,
                     file_offset: 113,
                 }],
-                file_size: 196,
+                file_contents: &bytes[..]
             }
         );
-        let (size, offset) = result.get_size_offset(0);
-        let contents = String::from_utf8(result.parse_file(0, &bytes[offset..offset + size]));
+        let contents = String::from_utf8(result.parse_file(0).unwrap());
         assert!(contents.is_ok());
-        assert_eq!(contents.unwrap(), "<TextData>\r\n	<Property name=\"color\" value=\"#ff0000\" />\r\n	<Property name=\"text\" value=\"Hello there!\" />\r\n</TextData>");
+        assert_eq!(
+            contents.unwrap(),
+            "<TextData>\r\n	<Property name=\"color\" value=\"#ff0000\" />\r\n	<Property name=\"text\" value=\"Hello there!\" />\r\n</TextData>"
+        );
     }
 }

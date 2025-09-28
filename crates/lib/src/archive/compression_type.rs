@@ -1,8 +1,7 @@
-use crate::traits::{ConvertAsBytes, Parsable};
 use anyhow::anyhow;
 
-const LZMA_COMPRESSION: &str = "lzma";
-const ZLIB_COMPRESSION: &str = "zlib";
+const LZMA_COMPRESSION: &[u8; 4] = b"lzma";
+const ZLIB_COMPRESSION: &[u8; 4] = b"zlib";
 
 /// **PSArchiveCompression** is the type of compression that the Playstation Archive file has
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -16,17 +15,12 @@ pub enum PSArchiveCompression {
     ERROR,
 }
 
-/// Should parse 4 bytes, any more or less will result in an error
-impl Parsable for PSArchiveCompression {
-    type Error = anyhow::Error;
-    fn parse(bytes: impl ConvertAsBytes) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let bytes = bytes.convert_as_bytes();
-        if LZMA_COMPRESSION.convert_as_bytes() == bytes {
+impl PSArchiveCompression {
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+        let snippet = &bytes[0..4];
+        if LZMA_COMPRESSION == snippet {
             return Ok(Self::LZMA);
-        } else if ZLIB_COMPRESSION.convert_as_bytes() == bytes {
+        } else if ZLIB_COMPRESSION == snippet {
             return Ok(Self::ZLIB);
         }
         Err(anyhow!("Invalid compression type"))
@@ -59,7 +53,6 @@ impl std::fmt::Display for PSArchiveCompression {
 #[doc(hidden)]
 mod test {
     use super::PSArchiveCompression;
-    use crate::prelude::*;
 
     #[test]
     fn test_compression_parsing_lzma() {

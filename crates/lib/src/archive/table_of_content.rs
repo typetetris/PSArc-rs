@@ -1,5 +1,4 @@
 use super::PSArchiveFlags;
-use crate::prelude::*;
 
 /// **PSArchiveTOC** contains the table of content and details about each resource
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
@@ -11,33 +10,24 @@ pub struct PSArchiveTOC {
     pub entry_size: u32,
     /// **entry_count** is the amount of entries in the Playstation Archive file
     pub entry_count: u32,
+    /// **block_size** is the block size
+    pub block_size: u32,
     // **flags** is the flags of the Playstation Archive file
     pub flags: PSArchiveFlags,
 }
 
-impl Parsable for PSArchiveTOC {
-    type Error = anyhow::Error;
-    fn parse(bytes: impl ConvertAsBytes) -> Result<Self, Self::Error> {
-        let bytes = bytes.convert_as_bytes();
-        let length = (((bytes[0] as u32) << 24)
-            + ((bytes[1] as u32) << 16)
-            + ((bytes[2] as u32) << 8)
-            + (bytes[3] as u32))
-            - 32;
-        let entry_size = ((bytes[4] as u32) << 24)
-            + ((bytes[5] as u32) << 16)
-            + ((bytes[6] as u32) << 8)
-            + (bytes[7] as u32);
-        let entry_count = (((bytes[8] as u32) << 24)
-            + ((bytes[9] as u32) << 16)
-            + ((bytes[10] as u32) << 8)
-            + (bytes[11] as u32))
-            - 1;
-        let flags = PSArchiveFlags::parse(&[bytes[16], bytes[17], bytes[18], bytes[19]] as &[u8])?;
+impl PSArchiveTOC {
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
+        let length = u32::from_be_bytes(bytes[0..4].try_into()?) - 32;
+        let entry_size = u32::from_be_bytes(bytes[4..8].try_into()?);
+        let entry_count = u32::from_be_bytes(bytes[8..12].try_into()?);
+        let block_size = u32::from_be_bytes(bytes[12..16].try_into()?);
+        let flags = PSArchiveFlags::parse(bytes[16..20].try_into()?)?;
         Ok(Self {
             length,
             entry_size,
             entry_count,
+            block_size,
             flags,
         })
     }
@@ -47,12 +37,11 @@ impl Parsable for PSArchiveTOC {
 #[doc(hidden)]
 mod test {
     use super::{PSArchiveFlags, PSArchiveTOC};
-    use crate::prelude::*;
 
     #[test]
     fn test_toc_parsing() {
         let bytes = include_bytes!("../../res/test.pak")[0xC..].to_vec();
-        let result = PSArchiveTOC::parse(bytes);
+        let result = PSArchiveTOC::parse(&bytes[..]);
         assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(result.length, 64);

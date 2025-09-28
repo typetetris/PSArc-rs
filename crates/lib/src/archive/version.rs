@@ -1,4 +1,3 @@
-use crate::traits::*;
 use anyhow::anyhow;
 
 /// **ArchiveVersion** contains the major and minor version numbers of an Playstation Archive file
@@ -11,14 +10,8 @@ pub struct PSArchiveVersion {
     pub minor: u16,
 }
 
-// Should parse 4 bytes, any more or less will result in an error
-impl Parsable for PSArchiveVersion {
-    type Error = anyhow::Error;
-    fn parse(bytes: impl ConvertAsBytes) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let bytes = bytes.convert_as_bytes();
+impl PSArchiveVersion {
+    pub fn parse(bytes: &[u8]) -> anyhow::Result<Self> {
         match bytes.len() {
             4 => {
                 let major = bytes[1] as u16 + ((bytes[0] as u16) << 8);
@@ -40,12 +33,11 @@ impl std::fmt::Display for PSArchiveVersion {
 #[doc(hidden)]
 mod test {
     use super::PSArchiveVersion;
-    use crate::prelude::*;
 
     #[test]
     fn test_version_parsing() {
         let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
-        let result = PSArchiveVersion::parse(bytes);
+        let result = PSArchiveVersion::parse(&bytes[..]);
         assert!(result.is_ok());
         let result = result.unwrap();
         assert_eq!(result.major, 1);
@@ -55,7 +47,7 @@ mod test {
     #[test]
     fn test_version_display() {
         let bytes = include_bytes!("../../res/test.pak")[0x4..0x8].to_vec();
-        let result = PSArchiveVersion::parse(bytes).unwrap();
+        let result = PSArchiveVersion::parse(&bytes[..]).unwrap();
         assert_eq!(format!("{result}"), "v1.4");
     }
 }
