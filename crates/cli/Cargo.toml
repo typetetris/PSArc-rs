@@ -10,4 +10,6 @@ license-file = "LICENSE"
 keywords = ["ps", "playstation", "arc", "archive", "psarc"]
 
 [dependencies]
+anyhow = "1.0.100"
+clap = { version = "4.5.48", features = ["derive"] }
 psarc-lib = { workspace = true }
